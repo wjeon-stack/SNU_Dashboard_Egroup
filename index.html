@@ -382,18 +382,31 @@ function showToast(text, isError) {
   toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1400);
 }
 
-function saveCell(pairId, stepKey, field, value) {
+// 여러 사람이 동시에 저장할 때 서버가 일시적으로 바쁘거나(락) 네트워크가 흔들려도
+// 화면에는 에러가 남지 않도록, 실패 시 잠시 후 자동으로 다시 시도한다.
+// 항상 "가장 마지막에 성공적으로 저장된 값"이 시트에 남는다.
+function saveCell(pairId, stepKey, field, value, attempt) {
+  attempt = attempt || 1;
   if (!isApiConfigured()) { showToast('API_URL 미설정 - 저장 안 됨', true); return; }
+
   fetch(API_URL, {
     method: 'POST',
     body: JSON.stringify({ action: 'updateCell', pairId: pairId, stepKey: stepKey, field: field, value: value })
   })
     .then(function (res) { return res.json(); })
     .then(function (data) {
-      if (data.error) { showToast('저장 실패: ' + data.error, true); return; }
+      if (data.error) { throw new Error(data.error); }
       showToast('저장됨');
     })
-    .catch(function () { showToast('저장 실패 (네트워크 오류)', true); });
+    .catch(function (err) {
+      if (attempt < 4) {
+        setTimeout(function () {
+          saveCell(pairId, stepKey, field, value, attempt + 1);
+        }, 700 * attempt);
+      } else {
+        showToast('저장 실패 - 새로고침 후 다시 시도해주세요', true);
+      }
+    });
 }
 
 function el(tag, cls, text) {
