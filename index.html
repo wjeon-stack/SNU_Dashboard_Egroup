@@ -148,13 +148,13 @@
   .field-input::placeholder{color:#B7BFCF;}
 
   .date-group{display:flex; gap:4px; flex:1; min-width:0;}
-  select.date-part, select.time-select{
+  select.date-part{
     font-family:inherit; font-size:11px; color:var(--ink); background:var(--paper);
     border:1.5px solid var(--line); border-radius:8px; padding:4px 2px; outline:none; cursor:pointer;
     flex:1; min-width:0; text-align:center; text-align-last:center;
     appearance:none; -webkit-appearance:none;
   }
-  select.date-part:focus, select.time-select:focus{border-color:var(--blue); background:var(--white);}
+  select.date-part:focus{border-color:var(--blue); background:var(--white);}
 
   .saved-toast{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -222,19 +222,11 @@ const TEAM_CODE = "E";
 const TEAM_LABEL = "E조";
 const STORAGE_KEY = "coaching_dashboard_" + TEAM_CODE + "_v1";
 
-// 세 번째 값이 true면 진행현황(상태) 칸만 표시하고 일자/시간/비고는 생략
 const STEPS = [
-  ['contact', '첫 연락'],
   ['pre', '프리세션'],
-  ['pre_log', '프리세션\n코칭일지', true],
   ['s1', '1회기'],
-  ['s1_log', '1회기\n코칭일지', true],
   ['s2', '2회기'],
-  ['s2_log', '2회기\n코칭일지', true],
-  ['s3', '3회기\n(선택)'],
-  ['s3_log', '3회기\n코칭일지', true],
-  ['report', '종합리포트', true],
-  ['survey', '만족도 설문', true]
+  ['s3', '3회기\n(선택)']
 ];
 const STATUS_OPTIONS = ['미진행', '진행예정', '진행완료', '기타'];
 
@@ -260,7 +252,6 @@ function loadState() {
       steps[s[0]] = {
         status: savedStep.status || '미진행',
         date: savedStep.date || '',
-        time: savedStep.time || '',
         note: savedStep.note || ''
       };
     });
@@ -403,7 +394,6 @@ function renderTable() {
 
     STEPS.forEach(function (s) {
       const stepKey = s[0];
-      const isSimple = !!s[2];
       const stepData = state[p.pairId][stepKey];
       const td = document.createElement('td');
       cellRefs[p.pairId + '|' + stepKey] = td;
@@ -423,69 +413,53 @@ function renderTable() {
         saveState();
       });
 
-      const fields = [['진행현황', select]];
-
-      if (!isSimple) {
-        const dateParts = (stepData.date || '').split('-'); // ['MM','DD']
-        const monthSel = document.createElement('select');
-        monthSel.className = 'field-input date-part';
-        const dayVal = dateParts[1] || '';
-        const monthVal = dateParts[0] || '';
-        appendOption(monthSel, '', '월');
-        for (let m = 1; m <= 12; m++) {
-          const mm = String(m).padStart(2, '0');
-          appendOption(monthSel, mm, m + '월', mm === monthVal);
-        }
-        const daySel = document.createElement('select');
-        daySel.className = 'field-input date-part';
-        appendOption(daySel, '', '일');
-        for (let d = 1; d <= 31; d++) {
-          const dd = String(d).padStart(2, '0');
-          appendOption(daySel, dd, d + '일', dd === dayVal);
-        }
-        const syncDate = function () {
-          stepData.date = (monthSel.value && daySel.value) ? (monthSel.value + '-' + daySel.value) : '';
-          saveState();
-        };
-        monthSel.addEventListener('change', syncDate);
-        daySel.addEventListener('change', syncDate);
-        const dateGroup = el('div', 'date-group');
-        dateGroup.appendChild(monthSel);
-        dateGroup.appendChild(daySel);
-
-        const timeSel = document.createElement('select');
-        timeSel.className = 'field-input time-select';
-        appendOption(timeSel, '', '시간');
-        for (let m = 0; m < 24 * 60; m += 30) {
-          const hh = String(Math.floor(m / 60)).padStart(2, '0');
-          const mm = String(m % 60).padStart(2, '0');
-          const val = hh + ':' + mm;
-          appendOption(timeSel, val, val, val === stepData.time);
-        }
-        timeSel.addEventListener('change', function () {
-          stepData.time = timeSel.value;
-          saveState();
-        });
-
-        const note = document.createElement('input');
-        note.type = 'text';
-        note.className = 'field-input note-input';
-        note.placeholder = '비고';
-        note.value = stepData.note || '';
-        const debouncedSave = debounce(function () {
-          stepData.note = note.value;
-          saveState();
-        }, 500);
-        note.addEventListener('input', debouncedSave);
-        note.addEventListener('blur', function () {
-          stepData.note = note.value;
-          saveState();
-        });
-
-        fields.push(['일자', dateGroup], ['시간', timeSel], ['비고', note]);
+      const dateParts = (stepData.date || '').split('-'); // ['MM','DD']
+      const monthSel = document.createElement('select');
+      monthSel.className = 'field-input date-part';
+      const dayVal = dateParts[1] || '';
+      const monthVal = dateParts[0] || '';
+      appendOption(monthSel, '', '월');
+      for (let m = 1; m <= 12; m++) {
+        const mm = String(m).padStart(2, '0');
+        appendOption(monthSel, mm, m + '월', mm === monthVal);
       }
+      const daySel = document.createElement('select');
+      daySel.className = 'field-input date-part';
+      appendOption(daySel, '', '일');
+      for (let d = 1; d <= 31; d++) {
+        const dd = String(d).padStart(2, '0');
+        appendOption(daySel, dd, d + '일', dd === dayVal);
+      }
+      const syncDate = function () {
+        stepData.date = (monthSel.value && daySel.value) ? (monthSel.value + '-' + daySel.value) : '';
+        saveState();
+      };
+      monthSel.addEventListener('change', syncDate);
+      daySel.addEventListener('change', syncDate);
+      const dateGroup = el('div', 'date-group');
+      dateGroup.appendChild(monthSel);
+      dateGroup.appendChild(daySel);
 
-      fields.forEach(function (pair) {
+      const note = document.createElement('input');
+      note.type = 'text';
+      note.className = 'field-input note-input';
+      note.placeholder = '비고';
+      note.value = stepData.note || '';
+      const debouncedSave = debounce(function () {
+        stepData.note = note.value;
+        saveState();
+      }, 500);
+      note.addEventListener('input', debouncedSave);
+      note.addEventListener('blur', function () {
+        stepData.note = note.value;
+        saveState();
+      });
+
+      [
+        ['진행현황', select],
+        ['일자', dateGroup],
+        ['비고', note]
+      ].forEach(function (pair) {
         const row = el('div', 'cell-row');
         row.appendChild(el('span', 'field-label', pair[0]));
         row.appendChild(pair[1]);
@@ -525,12 +499,12 @@ const THIN_BORDER = { style: 'thin', color: { rgb: 'E7ECF7' } };
 const BORDER_ALL = { top: THIN_BORDER, bottom: THIN_BORDER, left: THIN_BORDER, right: THIN_BORDER };
 
 document.getElementById('exportBtn').addEventListener('click', function () {
-  const headers = ['코치', '피코치', '단계', '진행현황', '일자(월-일)', '시간', '비고'];
+  const headers = ['코치', '피코치', '단계', '진행현황', '일자(월-일)', '비고'];
   const dataRows = [];
   PAIRS.forEach(function (p) {
     STEPS.forEach(function (s) {
       const sd = state[p.pairId][s[0]];
-      dataRows.push([p.coach, p.coachee, s[1].replace(/\n/g, ' '), sd.status, sd.date || '', sd.time || '', sd.note || '']);
+      dataRows.push([p.coach, p.coachee, s[1].replace(/\n/g, ' '), sd.status, sd.date || '', sd.note || '']);
     });
   });
 
@@ -559,7 +533,7 @@ document.getElementById('exportBtn').addEventListener('click', function () {
       let fill = isLeaderRow ? 'EAF1FF' : (R % 2 === 0 ? 'FFFFFF' : 'FBFCFF');
       let fontColor = '20242C';
       let bold = (C === 0 && isLeaderRow);
-      const align = (C === 0 || C === 1 || C === 2 || C === 6) ? 'left' : 'center';
+      const align = (C === 0 || C === 1 || C === 2 || C === 5) ? 'left' : 'center';
 
       if (C === 3) {
         const colors = STATUS_COLORS[cell.v];
@@ -576,7 +550,7 @@ document.getElementById('exportBtn').addEventListener('click', function () {
   }
 
   ws['!cols'] = [
-    { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 26 }
+    { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 26 }
   ];
   ws['!rows'] = [{ hpx: 22 }];
   ws['!autofilter'] = { ref: ws['!ref'] };
