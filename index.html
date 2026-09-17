@@ -170,7 +170,7 @@
     .coach-name{font-size:11.5px;}
     .coachee-name{font-size:9.5px;}
     select.status-select{font-size:9px; padding:3px 2px; padding-right:12px; border-radius:6px;}
-    .field-input, select.date-part{font-size:8.5px; padding:2px 3px; border-radius:6px;}
+    .field-input, .date-picker-display{font-size:8.5px; padding:2px 3px; border-radius:6px; padding-right:14px; background-size:9px;}
   }
   select.status-select{
     font-family:inherit; font-size:11.5px; font-weight:700; border-radius:8px; border:1.5px solid var(--line);
@@ -193,14 +193,20 @@
   .field-input:focus{border-color:var(--blue); background:var(--white);}
   .field-input::placeholder{color:#B7BFCF;}
 
-  .date-group{display:flex; gap:4px; width:100%;}
-  select.date-part{
-    font-family:inherit; font-size:11px; color:var(--ink); background:var(--paper);
-    border:1.5px solid var(--line); border-radius:8px; padding:4px 2px; outline:none; cursor:pointer;
-    flex:1; min-width:0; text-align:center; text-align-last:center;
-    appearance:none; -webkit-appearance:none;
+  .date-picker-wrap{position:relative; width:100%;}
+  .date-picker-display{
+    font-family:inherit; font-size:11px; font-weight:600; color:var(--ink); background:var(--paper);
+    border:1.5px solid var(--line); border-radius:8px; padding:4px 5px; outline:none;
+    width:100%; text-align:center; cursor:pointer;
+    background-repeat:no-repeat; background-position:right 5px center; background-size:11px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23697386' stroke-width='2'><rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18M8 3v4M16 3v4'/></svg>");
+    padding-right:20px;
   }
-  select.date-part:focus{border-color:var(--blue); background:var(--white);}
+  .date-picker-display:hover, .date-picker-display:focus{border-color:var(--blue); background-color:var(--white);}
+  .date-picker-input{
+    position:absolute; top:0; left:0; width:1px; height:1px; opacity:0; border:none; padding:0; margin:0;
+    pointer-events:none;
+  }
 
   .saved-toast{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -469,33 +475,42 @@ function renderTable() {
           });
           td.appendChild(select);
         } else if (rowType[0] === 'date') {
-          const dateParts = (stepData.date || '').split('-'); // ['MM','DD']
-          const monthSel = document.createElement('select');
-          monthSel.className = 'field-input date-part';
-          const dayVal = dateParts[1] || '';
-          const monthVal = dateParts[0] || '';
-          appendOption(monthSel, '', '월');
-          for (let m = 1; m <= 12; m++) {
-            const mm = String(m).padStart(2, '0');
-            appendOption(monthSel, mm, m + '월', mm === monthVal);
-          }
-          const daySel = document.createElement('select');
-          daySel.className = 'field-input date-part';
-          appendOption(daySel, '', '일');
-          for (let d = 1; d <= 31; d++) {
-            const dd = String(d).padStart(2, '0');
-            appendOption(daySel, dd, d + '일', dd === dayVal);
-          }
-          const syncDate = function () {
-            stepData.date = (monthSel.value && daySel.value) ? (monthSel.value + '-' + daySel.value) : '';
+          const wrap = el('div', 'date-picker-wrap');
+          const display = document.createElement('button');
+          display.type = 'button';
+          display.className = 'date-picker-display';
+          display.textContent = stepData.date ? stepData.date.replace('-', '/') : '일자 선택';
+
+          const hiddenInput = document.createElement('input');
+          hiddenInput.type = 'date';
+          hiddenInput.className = 'date-picker-input';
+          hiddenInput.tabIndex = -1;
+          const pickYear = new Date().getFullYear();
+          if (stepData.date) hiddenInput.value = pickYear + '-' + stepData.date;
+
+          hiddenInput.addEventListener('change', function () {
+            if (hiddenInput.value) {
+              const parts = hiddenInput.value.split('-'); // [YYYY, MM, DD]
+              stepData.date = parts[1] + '-' + parts[2];
+              display.textContent = parts[1] + '/' + parts[2];
+            } else {
+              stepData.date = '';
+              display.textContent = '일자 선택';
+            }
             saveState();
-          };
-          monthSel.addEventListener('change', syncDate);
-          daySel.addEventListener('change', syncDate);
-          const dateGroup = el('div', 'date-group');
-          dateGroup.appendChild(monthSel);
-          dateGroup.appendChild(daySel);
-          td.appendChild(dateGroup);
+          });
+          display.addEventListener('click', function () {
+            if (hiddenInput.showPicker) {
+              try { hiddenInput.showPicker(); } catch (e) { hiddenInput.focus(); }
+            } else {
+              hiddenInput.focus();
+              hiddenInput.click();
+            }
+          });
+
+          wrap.appendChild(display);
+          wrap.appendChild(hiddenInput);
+          td.appendChild(wrap);
         } else {
           const note = document.createElement('input');
           note.type = 'text';
