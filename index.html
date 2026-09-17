@@ -215,6 +215,12 @@
     opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:50;
   }
   .saved-toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .saved-toast.toast-error{background:var(--danger);}
+
+  .error-msg{
+    padding:12px 14px; background:var(--pink-tint); color:var(--danger); border-radius:10px;
+    font-size:12.5px; font-weight:700; margin-bottom:12px;
+  }
 
   .legend{display:flex; flex-wrap:wrap; gap:14px; margin:14px 2px 4px; font-size:12px; color:var(--slate); font-weight:700;}
   .legend span{display:inline-flex; align-items:center; gap:6px;}
@@ -247,8 +253,11 @@
       </div>
 
       <div class="top-actions">
+        <button class="btn" id="refreshBtn">새로고침</button>
         <button class="btn primary" id="exportBtn">백업 다운로드 (Excel)</button>
       </div>
+
+      <div id="errorBox"></div>
 
       <div class="summary-title" id="summaryTitle">단계별 진행 현황</div>
       <div class="step-summary-wrap"><div id="summaryBox"></div></div>
@@ -270,9 +279,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
+// 배포 후 아래 URL을 Apps Script 웹 앱 URL로 교체하세요 (apps-script/Code.gs 참고)
+const API_URL = "https://script.google.com/macros/s/AKfycbxprtkrE-zIym0BsE76kZ7tOvzAocwBVprijJXL5gdAsgCIcH7lEzr6c_TY6zspxOFFwg/exec";
+
 const TEAM_CODE = "E";
 const TEAM_LABEL = "E조";
-const STORAGE_KEY = "coaching_dashboard_" + TEAM_CODE + "_v1";
 
 const STEPS = [
   ['pre', '프리세션'],
@@ -285,55 +296,104 @@ const STATUS_OPTIONS = ['미진행', '진행예정', '진행완료', '기타'];
 // 05번 폴더 매칭결과 기준 이 조의 코치-피코치 목록 (리더 코치가 맨 위)
 const PAIRS = [{"coach":"최호석","coachee":"이주현","isLeader":true},{"coach":"박혜준","coachee":"유우정"},{"coach":"설도환","coachee":"원종빈"},{"coach":"신자영","coachee":"김주연"},{"coach":"신정호","coachee":"최민서"},{"coach":"안나은","coachee":"이정환"}];
 
-function loadState() {
-  let saved = {};
-  try {
-    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch (e) { saved = {}; }
-
-  const state = {};
+// pairId 부여 규칙은 Apps Script(Code.gs)의 seed()와 동일해야 함: TEAM-코치명-순번
+function assignPairIds() {
   const counter = {};
   PAIRS.forEach(function (p) {
     counter[p.coach] = (counter[p.coach] || 0) + 1;
-    const pairId = TEAM_CODE + '-' + p.coach + '-' + counter[p.coach];
-    p.pairId = pairId;
-    const savedPair = saved[pairId] || {};
+    p.pairId = TEAM_CODE + '-' + p.coach + '-' + counter[p.coach];
+  });
+}
+assignPairIds();
+
+function emptyState() {
+  const state = {};
+  PAIRS.forEach(function (p) {
     const steps = {};
     STEPS.forEach(function (s) {
-      const savedStep = savedPair[s[0]] || {};
-      steps[s[0]] = {
-        status: savedStep.status || '미진행',
-        date: savedStep.date || '',
-        note: savedStep.note || ''
-      };
+      steps[s[0]] = { status: '미진행', date: '', note: '' };
     });
-    state[pairId] = steps;
+    state[p.pairId] = steps;
   });
   return state;
 }
 
-let state = loadState();
+let state = emptyState();
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  renderSummary();
-  showToast();
+function applyServerRecords(records) {
+  const byId = {};
+  (records || []).forEach(function (r) { byId[r.pairId] = r; });
+  PAIRS.forEach(function (p) {
+    const rec = byId[p.pairId];
+    const steps = {};
+    STEPS.forEach(function (s) {
+      const saved = (rec && rec.steps && rec.steps[s[0]]) || {};
+      steps[s[0]] = {
+        status: saved.status || '미진행',
+        date: saved.date || '',
+        note: saved.note || ''
+      };
+    });
+    state[p.pairId] = steps;
+  });
+}
+
+function isApiConfigured() {
+  return API_URL && API_URL.indexOf('PASTE_YOUR') !== 0;
+}
+
+function loadFromServer() {
+  if (!isApiConfigured()) {
+    showError('API_URL이 설정되지 않았습니다. index.html의 API_URL 값을 Apps Script 웹 앱 URL로 교체해주세요.');
+    renderAll();
+    return;
+  }
+  document.getElementById('tableArea').innerHTML = '<div class="state-msg">불러오는 중...</div>';
+  clearError();
+  fetch(API_URL + '?group=' + encodeURIComponent(TEAM_CODE))
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (data.error) { showError('불러오기 실패: ' + data.error); return; }
+      applyServerRecords(data.records);
+      renderAll();
+    })
+    .catch(function (err) {
+      showError('불러오기 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요. (' + err + ')');
+      renderAll();
+    });
+}
+
+function showError(msg) {
+  document.getElementById('errorBox').innerHTML = '';
+  const box = el('div', 'error-msg', msg);
+  document.getElementById('errorBox').appendChild(box);
+}
+function clearError() {
+  document.getElementById('errorBox').innerHTML = '';
 }
 
 let toastTimer;
-function showToast() {
+function showToast(text, isError) {
   const t = document.getElementById('savedToast');
-  t.textContent = '저장됨';
+  t.textContent = text || '저장됨';
+  t.classList.toggle('toast-error', !!isError);
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1200);
+  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1400);
 }
 
-function appendOption(select, value, label, selected) {
-  const o = document.createElement('option');
-  o.value = value; o.textContent = label;
-  if (selected) o.selected = true;
-  select.appendChild(o);
+function saveCell(pairId, stepKey, field, value) {
+  if (!isApiConfigured()) { showToast('API_URL 미설정 - 저장 안 됨', true); return; }
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'updateCell', pairId: pairId, stepKey: stepKey, field: field, value: value })
+  })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (data.error) { showToast('저장 실패: ' + data.error, true); return; }
+      showToast('저장됨');
+    })
+    .catch(function () { showToast('저장 실패 (네트워크 오류)', true); });
 }
 
 function el(tag, cls, text) {
@@ -471,7 +531,8 @@ function renderTable() {
           select.addEventListener('change', function () {
             stepData.status = select.value;
             select.className = 'status-select st-' + select.value;
-            saveState();
+            renderSummary();
+            saveCell(p.pairId, stepKey, 'status', stepData.status);
           });
           td.appendChild(select);
         } else if (rowType[0] === 'date') {
@@ -497,7 +558,7 @@ function renderTable() {
               stepData.date = '';
               display.textContent = '일자 선택';
             }
-            saveState();
+            saveCell(p.pairId, stepKey, 'date', stepData.date);
           });
           display.addEventListener('click', function () {
             if (hiddenInput.showPicker) {
@@ -519,12 +580,12 @@ function renderTable() {
           note.value = stepData.note || '';
           const debouncedSave = debounce(function () {
             stepData.note = note.value;
-            saveState();
+            saveCell(p.pairId, stepKey, 'note', stepData.note);
           }, 500);
           note.addEventListener('input', debouncedSave);
           note.addEventListener('blur', function () {
             stepData.note = note.value;
-            saveState();
+            saveCell(p.pairId, stepKey, 'note', stepData.note);
           });
           td.appendChild(note);
         }
@@ -649,7 +710,9 @@ document.getElementById('exportBtn').addEventListener('click', function () {
   });
 });
 
-renderAll();
+document.getElementById('refreshBtn').addEventListener('click', loadFromServer);
+
+loadFromServer();
 </script>
 </body>
 </html>
