@@ -25,6 +25,8 @@
     --line:#E7ECF7;
     --danger:#D9455F;
     --radius:14px;
+    --who-w:88px;
+    --label-w:28px;
   }
   *{box-sizing:border-box;}
   html{background:var(--navy);}
@@ -99,39 +101,83 @@
   tbody td.cell-flash{animation:cellFlash 1.8s ease-out; border-radius:10px;}
   .step-summary td.zero{color:#C7CCDA; font-weight:600;}
 
-  .table-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:14px; margin-top:8px;}
-  table{border-collapse:collapse; width:100%; min-width:1560px;}
+  .table-scroll{
+    overflow:auto; -webkit-overflow-scrolling:touch;
+    border:1px solid var(--line); border-radius:14px; margin-top:8px;
+    max-height:72vh;
+  }
+  table{border-collapse:collapse; width:100%; min-width:460px;}
   thead th{
-    background:var(--navy); color:var(--white); font-size:12.5px; font-weight:700;
-    padding:10px 8px; text-align:center; position:sticky; top:0; white-space:pre-line;
+    background:var(--navy); color:var(--white); font-size:11.5px; font-weight:700;
+    padding:8px 6px; text-align:center; white-space:pre-line;
+    position:sticky; top:0; z-index:2;
+    border-left:1px solid rgba(255,255,255,.18);
   }
-  thead th.who-col{text-align:left; padding-left:14px; min-width:150px;}
+  thead th.who-col{
+    text-align:left; padding-left:10px; min-width:var(--who-w); width:var(--who-w);
+    left:0; z-index:4; border-left:none;
+  }
+  thead th.label-col{
+    min-width:var(--label-w); width:var(--label-w); font-size:10px;
+    left:var(--who-w); z-index:4;
+  }
   tbody td{
-    border-top:1px solid var(--line); padding:6px 6px; vertical-align:top; text-align:center;
-    min-width:140px;
+    border-top:1px solid var(--line); border-left:1px solid var(--line);
+    padding:4px 3px; vertical-align:middle; text-align:center;
+    min-width:82px;
   }
-  tbody tr:nth-child(even){background:#FBFCFF;}
+  tbody tr.stripe-b{background:#FBFCFF;}
   tbody tr.leader-row{background:var(--blue-tint);}
-  .who-cell{text-align:left; padding-left:14px !important; white-space:nowrap;}
-  .coach-name{font-size:14px; font-weight:800; color:var(--navy);}
-  .leader-badge{
-    display:inline-block; font-size:10px; font-weight:800; color:var(--white);
-    background:var(--orange); border-radius:6px; padding:1px 6px; margin-left:6px; vertical-align:middle;
+  .who-cell, .label-cell{
+    position:sticky; z-index:1;
+    background:var(--white); border-left:none;
   }
-  .coachee-name{font-size:12px; color:var(--slate); margin-top:2px;}
+  tbody tr.stripe-b .who-cell, tbody tr.stripe-b .label-cell{background:#FBFCFF;}
+  tbody tr.leader-row .who-cell, tbody tr.leader-row .label-cell{background:var(--blue-tint);}
+  .who-cell{
+    text-align:center; padding-left:6px !important; padding-right:6px; white-space:normal; word-break:keep-all;
+    left:0; z-index:2;
+    box-shadow:2px 0 4px rgba(15,25,70,0.06);
+  }
+  .label-cell{
+    left:var(--who-w); font-size:9.5px; font-weight:800; color:var(--slate);
+    white-space:nowrap; min-width:var(--label-w); width:var(--label-w);
+    padding-left:2px !important; padding-right:2px !important;
+  }
+  .coach-name{font-size:12.5px; font-weight:800; color:var(--navy);}
+  .leader-badge{
+    display:inline-block; font-size:8px; font-weight:800; color:var(--white);
+    background:var(--orange); border-radius:5px; padding:1px 4px; margin-bottom:2px;
+  }
+  .coachee-name{font-size:10.5px; color:var(--slate); margin-top:1px;}
 
-  .cell-box{display:flex; flex-direction:column; gap:4px; align-items:stretch;}
-  .cell-row{display:flex; align-items:center; gap:5px;}
-  .field-label{
-    font-size:9.5px; font-weight:800; color:#B7BFCF; width:40px; flex-shrink:0; text-align:left;
-    white-space:nowrap;
+  @media (max-width:640px){
+    :root{ --who-w:66px; --label-w:22px; }
+    .hero h1{font-size:18px;}
+    .hero .eyebrow{font-size:11px; padding:5px 12px; margin-bottom:10px;}
+    .summary-title{font-size:13px; margin:14px 0 6px;}
+    .step-summary{min-width:480px;}
+    .step-summary th, .step-summary td{padding:6px 4px; font-size:11.5px;}
+
+    .table-scroll{max-height:66vh;}
+    table{min-width:320px;}
+    thead th{font-size:10px; padding:6px 4px;}
+    thead th.who-col{padding-left:8px;}
+    thead th.label-col{font-size:9px;}
+    tbody td{padding:3px 2px; min-width:66px;}
+    .who-cell{padding-left:8px !important;}
+    .label-cell{font-size:9px;}
+    .coach-name{font-size:11.5px;}
+    .coachee-name{font-size:9.5px;}
+    select.status-select{font-size:9px; padding:3px 2px; padding-right:12px; border-radius:6px;}
+    .field-input, select.date-part{font-size:8.5px; padding:2px 3px; border-radius:6px;}
   }
   select.status-select{
     font-family:inherit; font-size:11.5px; font-weight:700; border-radius:8px; border:1.5px solid var(--line);
     padding:5px 4px; outline:none; cursor:pointer; appearance:none; -webkit-appearance:none;
     background-repeat:no-repeat; background-position:right 4px center; background-size:10px;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23697386' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
-    padding-right:16px; text-align:center; text-align-last:center; flex:1; min-width:0;
+    padding-right:16px; text-align:center; text-align-last:center; width:100%;
   }
   select.status-select:focus{border-color:var(--blue);}
   .st-미진행{background:var(--paper); color:var(--slate);}
@@ -142,12 +188,12 @@
   .field-input{
     font-family:inherit; font-size:11px; color:var(--ink); background:var(--paper);
     border:1.5px solid var(--line); border-radius:8px; padding:4px 5px; outline:none;
-    flex:1; min-width:0; text-align:center;
+    width:100%; text-align:center;
   }
   .field-input:focus{border-color:var(--blue); background:var(--white);}
   .field-input::placeholder{color:#B7BFCF;}
 
-  .date-group{display:flex; gap:4px; flex:1; min-width:0;}
+  .date-group{display:flex; gap:4px; width:100%;}
   select.date-part{
     font-family:inherit; font-size:11px; color:var(--ink); background:var(--paper);
     border:1.5px solid var(--line); border-radius:8px; padding:4px 2px; outline:none; cursor:pointer;
@@ -226,7 +272,7 @@ const STEPS = [
   ['pre', '프리세션'],
   ['s1', '1회기'],
   ['s2', '2회기'],
-  ['s3', '3회기\n(선택)']
+  ['s3', '3회기(선택)']
 ];
 const STATUS_OPTIONS = ['미진행', '진행예정', '진행완료', '기타'];
 
@@ -366,6 +412,7 @@ function debounce(fn, wait) {
 }
 
 const cellRefs = {};
+const ROW_TYPES = [['status', '현황'], ['date', '일자'], ['note', '비고']];
 
 function renderTable() {
   const area = document.getElementById('tableArea');
@@ -375,102 +422,103 @@ function renderTable() {
   const thead = document.createElement('thead');
   const trh = document.createElement('tr');
   trh.appendChild(el('th', 'who-col', '코치 / 피코치'));
+  trh.appendChild(el('th', 'label-col', '항목'));
   STEPS.forEach(function (s) { trh.appendChild(el('th', '', s[1])); });
   thead.appendChild(trh);
   table.appendChild(thead);
 
   const tbody = document.createElement('tbody');
-  PAIRS.forEach(function (p) {
-    const tr = document.createElement('tr');
-    if (p.isLeader) tr.classList.add('leader-row');
+  PAIRS.forEach(function (p, pairIdx) {
+    const stripeClass = pairIdx % 2 === 0 ? 'stripe-a' : 'stripe-b';
 
-    const whoTd = el('td', 'who-cell');
-    const nameLine = el('div');
-    nameLine.appendChild(el('span', 'coach-name', p.coach));
-    if (p.isLeader) nameLine.appendChild(el('span', 'leader-badge', '리더 코치'));
-    whoTd.appendChild(nameLine);
-    whoTd.appendChild(el('div', 'coachee-name', '피코치: ' + p.coachee));
-    tr.appendChild(whoTd);
+    ROW_TYPES.forEach(function (rowType, rowIdx) {
+      const tr = document.createElement('tr');
+      tr.classList.add(stripeClass);
+      if (p.isLeader) tr.classList.add('leader-row');
 
-    STEPS.forEach(function (s) {
-      const stepKey = s[0];
-      const stepData = state[p.pairId][stepKey];
-      const td = document.createElement('td');
-      cellRefs[p.pairId + '|' + stepKey] = td;
-      const box = el('div', 'cell-box');
-
-      const select = document.createElement('select');
-      select.className = 'status-select st-' + stepData.status;
-      STATUS_OPTIONS.forEach(function (opt) {
-        const o = document.createElement('option');
-        o.value = opt; o.textContent = opt;
-        if (opt === stepData.status) o.selected = true;
-        select.appendChild(o);
-      });
-      select.addEventListener('change', function () {
-        stepData.status = select.value;
-        select.className = 'status-select st-' + select.value;
-        saveState();
-      });
-
-      const dateParts = (stepData.date || '').split('-'); // ['MM','DD']
-      const monthSel = document.createElement('select');
-      monthSel.className = 'field-input date-part';
-      const dayVal = dateParts[1] || '';
-      const monthVal = dateParts[0] || '';
-      appendOption(monthSel, '', '월');
-      for (let m = 1; m <= 12; m++) {
-        const mm = String(m).padStart(2, '0');
-        appendOption(monthSel, mm, m + '월', mm === monthVal);
+      if (rowIdx === 0) {
+        const whoTd = el('td', 'who-cell');
+        whoTd.rowSpan = ROW_TYPES.length;
+        if (p.isLeader) whoTd.appendChild(el('div', 'leader-badge', '리더 코치'));
+        whoTd.appendChild(el('div', 'coach-name', p.coach));
+        whoTd.appendChild(el('div', 'coachee-name', '피코치: ' + p.coachee));
+        tr.appendChild(whoTd);
       }
-      const daySel = document.createElement('select');
-      daySel.className = 'field-input date-part';
-      appendOption(daySel, '', '일');
-      for (let d = 1; d <= 31; d++) {
-        const dd = String(d).padStart(2, '0');
-        appendOption(daySel, dd, d + '일', dd === dayVal);
-      }
-      const syncDate = function () {
-        stepData.date = (monthSel.value && daySel.value) ? (monthSel.value + '-' + daySel.value) : '';
-        saveState();
-      };
-      monthSel.addEventListener('change', syncDate);
-      daySel.addEventListener('change', syncDate);
-      const dateGroup = el('div', 'date-group');
-      dateGroup.appendChild(monthSel);
-      dateGroup.appendChild(daySel);
 
-      const note = document.createElement('input');
-      note.type = 'text';
-      note.className = 'field-input note-input';
-      note.placeholder = '비고';
-      note.value = stepData.note || '';
-      const debouncedSave = debounce(function () {
-        stepData.note = note.value;
-        saveState();
-      }, 500);
-      note.addEventListener('input', debouncedSave);
-      note.addEventListener('blur', function () {
-        stepData.note = note.value;
-        saveState();
+      tr.appendChild(el('td', 'label-cell', rowType[1]));
+
+      STEPS.forEach(function (s) {
+        const stepKey = s[0];
+        const stepData = state[p.pairId][stepKey];
+        const td = document.createElement('td');
+        if (rowType[0] === 'status') cellRefs[p.pairId + '|' + stepKey] = td;
+
+        if (rowType[0] === 'status') {
+          const select = document.createElement('select');
+          select.className = 'status-select st-' + stepData.status;
+          STATUS_OPTIONS.forEach(function (opt) {
+            const o = document.createElement('option');
+            o.value = opt; o.textContent = opt;
+            if (opt === stepData.status) o.selected = true;
+            select.appendChild(o);
+          });
+          select.addEventListener('change', function () {
+            stepData.status = select.value;
+            select.className = 'status-select st-' + select.value;
+            saveState();
+          });
+          td.appendChild(select);
+        } else if (rowType[0] === 'date') {
+          const dateParts = (stepData.date || '').split('-'); // ['MM','DD']
+          const monthSel = document.createElement('select');
+          monthSel.className = 'field-input date-part';
+          const dayVal = dateParts[1] || '';
+          const monthVal = dateParts[0] || '';
+          appendOption(monthSel, '', '월');
+          for (let m = 1; m <= 12; m++) {
+            const mm = String(m).padStart(2, '0');
+            appendOption(monthSel, mm, m + '월', mm === monthVal);
+          }
+          const daySel = document.createElement('select');
+          daySel.className = 'field-input date-part';
+          appendOption(daySel, '', '일');
+          for (let d = 1; d <= 31; d++) {
+            const dd = String(d).padStart(2, '0');
+            appendOption(daySel, dd, d + '일', dd === dayVal);
+          }
+          const syncDate = function () {
+            stepData.date = (monthSel.value && daySel.value) ? (monthSel.value + '-' + daySel.value) : '';
+            saveState();
+          };
+          monthSel.addEventListener('change', syncDate);
+          daySel.addEventListener('change', syncDate);
+          const dateGroup = el('div', 'date-group');
+          dateGroup.appendChild(monthSel);
+          dateGroup.appendChild(daySel);
+          td.appendChild(dateGroup);
+        } else {
+          const note = document.createElement('input');
+          note.type = 'text';
+          note.className = 'field-input note-input';
+          note.placeholder = '비고';
+          note.value = stepData.note || '';
+          const debouncedSave = debounce(function () {
+            stepData.note = note.value;
+            saveState();
+          }, 500);
+          note.addEventListener('input', debouncedSave);
+          note.addEventListener('blur', function () {
+            stepData.note = note.value;
+            saveState();
+          });
+          td.appendChild(note);
+        }
+
+        tr.appendChild(td);
       });
 
-      [
-        ['진행현황', select],
-        ['일자', dateGroup],
-        ['비고', note]
-      ].forEach(function (pair) {
-        const row = el('div', 'cell-row');
-        row.appendChild(el('span', 'field-label', pair[0]));
-        row.appendChild(pair[1]);
-        box.appendChild(row);
-      });
-
-      td.appendChild(box);
-      tr.appendChild(td);
+      tbody.appendChild(tr);
     });
-
-    tbody.appendChild(tr);
   });
   table.appendChild(tbody);
   area.appendChild(table);
